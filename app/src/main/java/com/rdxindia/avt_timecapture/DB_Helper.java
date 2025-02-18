@@ -6,6 +6,9 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+
 public class DB_Helper extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "location_data.db";
@@ -52,5 +55,30 @@ public class DB_Helper extends SQLiteOpenHelper {
         SQLiteDatabase db = this.getReadableDatabase();
         String query = "SELECT * FROM " + TABLE_NAME + " ORDER BY " + COLUMN_ID + " DESC LIMIT 1";
         return db.rawQuery(query, null);
+    }
+
+    // Get all location data
+    public Cursor getAllData() {
+        SQLiteDatabase db = this.getReadableDatabase();
+        return db.query(TABLE_NAME, null, null, null, null, null, COLUMN_TIMESTAMP + " DESC");
+    }
+
+    // Method to fetch all data from the database
+    public ArrayList<HashMap<String, String>> getData() {
+        ArrayList<HashMap<String, String>> dataList = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery("SELECT " + COLUMN_TIMESTAMP + ", " + COLUMN_LATITUDE + ", " + COLUMN_LONGITUDE + " FROM " + TABLE_NAME, null);
+
+        if (cursor.moveToFirst()) {
+            do {
+                HashMap<String, String> data = new HashMap<>();
+                data.put(COLUMN_TIMESTAMP, cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_TIMESTAMP)));
+                data.put(COLUMN_LATITUDE, cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_LATITUDE)));
+                data.put(COLUMN_LONGITUDE, cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_LONGITUDE)));
+                dataList.add(data);
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        return dataList;
     }
 }

@@ -4,30 +4,30 @@
     android:layout_height="match_parent"
     android:padding="16dp">
 
-    <Button
-        android:id="@+id/btnStartService"
+    <TextView
+        android:id="@+id/txtDistance"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Start Location Service"
+        android:text="Distance: 0.00 m"
+        android:textSize="20sp"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="50dp" />
-
-    <Button
-        android:id="@+id/btnStopService"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Stop Location Service"
-        android:layout_centerHorizontal="true"
-        android:layout_below="@id/btnStartService"
-        android:layout_marginTop="20dp" />
 
     <Button
         android:id="@+id/btnShowLatestData"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Show Latest Data"
+        android:text="Show Stored Data"
+        android:layout_below="@id/txtDistance"
         android:layout_centerHorizontal="true"
-        android:layout_below="@id/btnStopService"
         android:layout_marginTop="20dp" />
 
+    <Button
+        android:id="@+id/btnShowMap"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="OSL"
+        android:layout_below="@id/btnShowLatestData"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="20dp" />
 </RelativeLayout>
