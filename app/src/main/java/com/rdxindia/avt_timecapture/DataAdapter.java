@@ -5,48 +5,50 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.ArrayList;
 
 public class DataAdapter extends RecyclerView.Adapter<DataAdapter.ViewHolder> {
 
-    private ArrayList<String[]> dataList;
+    private final ArrayList<String[]> dataList;
 
     public DataAdapter(ArrayList<String[]> dataList) {
         this.dataList = dataList;
     }
 
-    public static class ViewHolder extends RecyclerView.ViewHolder {
-        public TextView tvId, tvTimestamp, tvLat, tvLon;
-
-        public ViewHolder(View itemView) {
-            super(itemView);
-            tvId = itemView.findViewById(R.id.tvId);
-            tvTimestamp = itemView.findViewById(R.id.tvTimestamp);
-            tvLat = itemView.findViewById(R.id.tvLat);
-            tvLon = itemView.findViewById(R.id.tvLon);
-        }
+    @NonNull
+    @Override
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_data, parent, false);
+        return new ViewHolder(view);
     }
 
     @Override
-    public DataAdapter.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_data, parent, false);
-        return new ViewHolder(v);
-    }
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        String[] data = dataList.get(position);
 
-    @Override
-    public void onBindViewHolder(DataAdapter.ViewHolder holder, int position) {
-        String[] item = dataList.get(position);
-        // item[0]=ID, item[1]=timestamp, item[2]=latitude, item[3]=longitude
-        holder.tvId.setText("ID: " + item[0]);
-        holder.tvTimestamp.setText("Time: " + item[1]);
-        holder.tvLat.setText("Lat: " + item[2]);
-        holder.tvLon.setText("Lon: " + item[3]);
+        holder.idText.setText(data[0]);
+        holder.timestampText.setText(data[1]);
+        holder.distanceText.setText(data[2]); // No extra formatting
+        holder.cumulativeDistanceText.setText(data[3]);
     }
 
     @Override
     public int getItemCount() {
         return dataList.size();
+    }
+
+    public static class ViewHolder extends RecyclerView.ViewHolder {
+        TextView idText, timestampText, distanceText, cumulativeDistanceText;
+
+        public ViewHolder(@NonNull View itemView) {
+            super(itemView);
+            idText = itemView.findViewById(R.id.text_id);
+            timestampText = itemView.findViewById(R.id.text_timestamp);
+            distanceText = itemView.findViewById(R.id.text_distance);
+            cumulativeDistanceText = itemView.findViewById(R.id.text_cumulative_distance);
+        }
     }
 }

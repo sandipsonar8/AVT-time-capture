@@ -5,8 +5,11 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -25,24 +28,21 @@ import java.util.Locale;
 public class LocationService extends Service implements LocationListener {
 
     private static final String TAG = "LocationService";
+    private static final String CHANNEL_ID = "location_channel";
+
     private LocationManager locationManager;
     private DB_Helper dbHelper;
 
-    // Configurable thresholds
-//    private static final float MOVING_DISTANCE_THRESHOLD = 1.0f; // 1 meter
-//    private static final long STABLE_TIME_THRESHOLD = 10000;     // 10 seconds
-
-
     private static final float MOVING_DISTANCE_THRESHOLD = 50.0f; // 50 meters
-    private static final long STABLE_TIME_THRESHOLD = 60000;     // 60 seconds
+    private static final long STABLE_TIME_THRESHOLD = 180000; // 3 minutes
 
     private Location lastStoredLocation;
     private long lastStoredTime = 0;
     private Location latestLocation;
+    private double cumulativeDistance = 0.0;
 
     private Handler handler;
     private Runnable periodicCheck;
-    private static final String CHANNEL_ID = "location_channel";
 
     @Override
     public void onCreate() {
@@ -50,26 +50,29 @@ public class LocationService extends Service implements LocationListener {
         dbHelper = new DB_Helper(this);
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
+        // Load last cumulative distance from database
+        loadLastCumulativeDistance();
+
         createNotificationChannel();
         startForeground(1, createForegroundNotification());
 
         try {
-            // Request location updates from both GPS and Network providers
             locationManager.requestLocationUpdates(
-                    LocationManager.GPS_PROVIDER, 1000, 0, this);
+                    LocationManager.NETWORK_PROVIDER, 5000, 20, this);
             locationManager.requestLocationUpdates(
-                    LocationManager.NETWORK_PROVIDER, 1000, 0, this);
+                    LocationManager.GPS_PROVIDER, 10000, 50, this);
         } catch (SecurityException e) {
             Log.e(TAG, "Permission error: " + e.getMessage());
         }
 
-        // Setup periodic check every second
+
+        // Periodic check every 10 seconds
         handler = new Handler();
         periodicCheck = new Runnable() {
             @Override
             public void run() {
                 checkStorageConditions();
-                handler.postDelayed(this, 1000); // Check every second
+                handler.postDelayed(this, 10000); // Check every 10 sec
             }
         };
         handler.post(periodicCheck);
@@ -78,16 +81,12 @@ public class LocationService extends Service implements LocationListener {
     private void checkStorageConditions() {
         long currentTime = System.currentTimeMillis();
 
-        // Initial storage condition
         if (lastStoredLocation == null && latestLocation != null) {
             storeAndUpdate(latestLocation, currentTime);
             return;
         }
 
-        // Time-based storage condition
-        if (latestLocation != null &&
-                (currentTime - lastStoredTime) >= STABLE_TIME_THRESHOLD) {
-
+        if (latestLocation != null && (currentTime - lastStoredTime) >= STABLE_TIME_THRESHOLD) {
             storeAndUpdate(latestLocation, currentTime);
         }
     }
@@ -101,10 +100,8 @@ public class LocationService extends Service implements LocationListener {
             return;
         }
 
-        // Calculate distance from last stored location
         float distance = location.distanceTo(lastStoredLocation);
 
-        // Distance-based storage condition
         if (distance >= MOVING_DISTANCE_THRESHOLD) {
             storeAndUpdate(location, System.currentTimeMillis());
         }
@@ -117,19 +114,42 @@ public class LocationService extends Service implements LocationListener {
     }
 
     private void storeLocation(Location location) {
-        String dateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-                .format(new Date());
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        String dateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date());
+        double latitude = location.getLatitude();
+        double longitude = location.getLongitude();
 
-        if (location != null) {
-            dbHelper.putData(dateTime,
-                    String.valueOf(location.getLatitude()),
-                    String.valueOf(location.getLongitude())
-            );
-            Log.d(TAG, "Stored: " + dateTime + ", Lat: " + location.getLatitude() +
-                    ", Lon: " + location.getLongitude());
-        } else {
-            dbHelper.putData(dateTime, "N/A", "N/A"); // Handle null location
-            Log.d(TAG, "Stored: " + dateTime + ", No location");
+        double distance = 0.0;
+
+        if (lastStoredLocation != null) {
+            distance = location.distanceTo(lastStoredLocation);
+            cumulativeDistance += distance;
+        }
+
+        ContentValues values = new ContentValues();
+        values.put(DB_Helper.COLUMN_TIMESTAMP, dateTime);
+        values.put(DB_Helper.COLUMN_LATITUDE, latitude);
+        values.put(DB_Helper.COLUMN_LONGITUDE, longitude);
+        values.put(DB_Helper.COLUMN_DISTANCE, distance);
+        values.put(DB_Helper.COLUMN_CUMULATIVE_DISTANCE, cumulativeDistance);
+
+        db.insert(DB_Helper.TABLE_NAME, null, values);
+        lastStoredLocation = location;
+        lastStoredTime = System.currentTimeMillis();
+
+        Log.d(TAG, "Stored: " + dateTime + ", Distance: " + distance + "m, Cumulative: " + cumulativeDistance + "m");
+    }
+
+    private void loadLastCumulativeDistance() {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        Cursor cursor = db.rawQuery("SELECT " + DB_Helper.COLUMN_CUMULATIVE_DISTANCE +
+                " FROM " + DB_Helper.TABLE_NAME + " ORDER BY " + DB_Helper.COLUMN_TIMESTAMP + " DESC LIMIT 1", null);
+
+        if (cursor != null && cursor.moveToFirst()) {
+            cumulativeDistance = cursor.getDouble(0);
+        }
+        if (cursor != null) {
+            cursor.close();
         }
     }
 

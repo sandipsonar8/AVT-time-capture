@@ -2,4 +2,26 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="purple_500">#673AB7</color>
+
+    <!-- Primary Colors -->
+    <color name="primary">#6200EE</color>
+    <color name="primaryVariant">#3700B3</color>
+    <color name="secondary">#03DAC6</color>
+
+    <!-- Background Colors -->
+    <color name="background">#F5F5F5</color>
+    <color name="gray">#EEEEEE</color>
+    <color name="gray_dark">#BDBDBD</color>
+
+    <!-- Text Colors -->
+    <color name="text_primary">#212121</color>
+    <color name="text_secondary">#757575</color>
+    <color name="text_white">#FFFFFF</color>
+
+    <!-- Status Colors (for badges like Delivered, Pending, etc.) -->
+    <color name="status_shipped">#FFCA28</color> <!-- Yellow -->
+    <color name="status_delivered">#4CAF50</color> <!-- Green -->
+    <color name="status_pending">#673AB7</color> <!-- Purple -->
+    <color name="status_failed">#F44336</color> <!-- Red -->
 </resources>

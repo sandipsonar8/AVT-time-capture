@@ -34,15 +34,23 @@ public class ShowDataActivity extends AppCompatActivity {
 
     private void loadData() {
         Cursor cursor = dbHelper.getAllData();
+
         if (cursor != null && cursor.moveToFirst()) {
             do {
                 String id = cursor.getString(cursor.getColumnIndexOrThrow(DB_Helper.COLUMN_ID));
                 String timestamp = cursor.getString(cursor.getColumnIndexOrThrow(DB_Helper.COLUMN_TIMESTAMP));
-                String latitude = cursor.getString(cursor.getColumnIndexOrThrow(DB_Helper.COLUMN_LATITUDE));
-                String longitude = cursor.getString(cursor.getColumnIndexOrThrow(DB_Helper.COLUMN_LONGITUDE));
-                dataList.add(new String[]{id, timestamp, latitude, longitude});
+                String distance = cursor.getString(cursor.getColumnIndexOrThrow(DB_Helper.COLUMN_DISTANCE));
+                String cumulativeDistance = cursor.getString(cursor.getColumnIndexOrThrow(DB_Helper.COLUMN_CUMULATIVE_DISTANCE));
+
+                // Store values without further modification
+                dataList.add(new String[]{id, timestamp, distance, cumulativeDistance});
+
             } while (cursor.moveToNext());
             cursor.close();
         }
     }
+
+
+
+
 }

@@ -20,17 +20,20 @@ public class DB_Helper extends SQLiteOpenHelper {
     public static final String COLUMN_LATITUDE = "latitude";
     public static final String COLUMN_LONGITUDE = "longitude";
 
+    public static final String COLUMN_DISTANCE = "distance";
+    public static final String COLUMN_CUMULATIVE_DISTANCE = "cumulative_distance";
     public DB_Helper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
 
-    @Override
     public void onCreate(SQLiteDatabase db) {
         String createTableSQL = "CREATE TABLE " + TABLE_NAME + " (" +
                 COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 COLUMN_TIMESTAMP + " TEXT, " +
                 COLUMN_LATITUDE + " TEXT, " +
-                COLUMN_LONGITUDE + " TEXT);";
+                COLUMN_LONGITUDE + " TEXT, " +
+                COLUMN_DISTANCE + " REAL DEFAULT 0, " +
+                COLUMN_CUMULATIVE_DISTANCE + " REAL DEFAULT 0);";
         db.execSQL(createTableSQL);
     }
 
@@ -41,12 +44,16 @@ public class DB_Helper extends SQLiteOpenHelper {
     }
 
     // Store data in the database
-    public void putData(String timestamp, String latitude, String longitude) {
+    public void putData(String timestamp, String latitude, String longitude, String distance, String cumulativeDistance) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues contentValues = new ContentValues();
+
         contentValues.put(COLUMN_TIMESTAMP, timestamp);
         contentValues.put(COLUMN_LATITUDE, latitude);
         contentValues.put(COLUMN_LONGITUDE, longitude);
+        contentValues.put(COLUMN_DISTANCE, distance);
+        contentValues.put(COLUMN_CUMULATIVE_DISTANCE, cumulativeDistance);
+
         db.insert(TABLE_NAME, null, contentValues);
     }
 
@@ -67,7 +74,11 @@ public class DB_Helper extends SQLiteOpenHelper {
     public ArrayList<HashMap<String, String>> getData() {
         ArrayList<HashMap<String, String>> dataList = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT " + COLUMN_TIMESTAMP + ", " + COLUMN_LATITUDE + ", " + COLUMN_LONGITUDE + " FROM " + TABLE_NAME, null);
+
+        Cursor cursor = db.rawQuery("SELECT " + COLUMN_TIMESTAMP + ", " +
+                COLUMN_LATITUDE + ", " + COLUMN_LONGITUDE + ", " +
+                COLUMN_DISTANCE + ", " + COLUMN_CUMULATIVE_DISTANCE +
+                " FROM " + TABLE_NAME, null);
 
         if (cursor.moveToFirst()) {
             do {
@@ -75,6 +86,9 @@ public class DB_Helper extends SQLiteOpenHelper {
                 data.put(COLUMN_TIMESTAMP, cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_TIMESTAMP)));
                 data.put(COLUMN_LATITUDE, cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_LATITUDE)));
                 data.put(COLUMN_LONGITUDE, cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_LONGITUDE)));
+                data.put(COLUMN_DISTANCE, cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_DISTANCE)) + " m");
+                data.put(COLUMN_CUMULATIVE_DISTANCE, cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_CUMULATIVE_DISTANCE)) + " m");
+
                 dataList.add(data);
             } while (cursor.moveToNext());
         }
