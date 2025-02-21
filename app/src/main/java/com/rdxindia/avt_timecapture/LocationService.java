@@ -21,6 +21,7 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -50,29 +51,25 @@ public class LocationService extends Service implements LocationListener {
         dbHelper = new DB_Helper(this);
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
-        // Load last cumulative distance from database
         loadLastCumulativeDistance();
-
         createNotificationChannel();
         startForeground(1, createForegroundNotification());
 
         try {
             locationManager.requestLocationUpdates(
-                    LocationManager.NETWORK_PROVIDER, 5000, 20, this);
-            locationManager.requestLocationUpdates(
-                    LocationManager.GPS_PROVIDER, 10000, 50, this);
+                    LocationManager.GPS_PROVIDER,
+                    2000, 5,  // Update every 2 sec or 5 meters
+                    this);
         } catch (SecurityException e) {
             Log.e(TAG, "Permission error: " + e.getMessage());
         }
 
-
-        // Periodic check every 10 seconds
         handler = new Handler();
         periodicCheck = new Runnable() {
             @Override
             public void run() {
                 checkStorageConditions();
-                handler.postDelayed(this, 10000); // Check every 10 sec
+                handler.postDelayed(this, 30000);
             }
         };
         handler.post(periodicCheck);
@@ -94,15 +91,15 @@ public class LocationService extends Service implements LocationListener {
     @Override
     public void onLocationChanged(@NonNull Location location) {
         latestLocation = location;
-
         if (lastStoredLocation == null) {
             storeAndUpdate(location, System.currentTimeMillis());
             return;
         }
 
         float distance = location.distanceTo(lastStoredLocation);
+        long timeSinceLastStore = System.currentTimeMillis() - lastStoredTime;
 
-        if (distance >= MOVING_DISTANCE_THRESHOLD) {
+        if (distance >= MOVING_DISTANCE_THRESHOLD || timeSinceLastStore >= STABLE_TIME_THRESHOLD) {
             storeAndUpdate(location, System.currentTimeMillis());
         }
     }
@@ -118,7 +115,7 @@ public class LocationService extends Service implements LocationListener {
         String dateTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date());
         double latitude = location.getLatitude();
         double longitude = location.getLongitude();
-
+        float speed = location.hasSpeed() ? location.getSpeed() : 0; // Speed in m/s
         double distance = 0.0;
 
         if (lastStoredLocation != null) {
@@ -130,15 +127,30 @@ public class LocationService extends Service implements LocationListener {
         values.put(DB_Helper.COLUMN_TIMESTAMP, dateTime);
         values.put(DB_Helper.COLUMN_LATITUDE, latitude);
         values.put(DB_Helper.COLUMN_LONGITUDE, longitude);
-        values.put(DB_Helper.COLUMN_DISTANCE, distance);
-        values.put(DB_Helper.COLUMN_CUMULATIVE_DISTANCE, cumulativeDistance);
+        values.put(DB_Helper.COLUMN_DISTANCE, formatDistance(distance));
+        values.put(DB_Helper.COLUMN_CUMULATIVE_DISTANCE, formatDistance_cumulative(cumulativeDistance));
+        values.put(DB_Helper.COLUMN_SPEED, formatSpeed(speed));
 
         db.insert(DB_Helper.TABLE_NAME, null, values);
         lastStoredLocation = location;
         lastStoredTime = System.currentTimeMillis();
 
-        Log.d(TAG, "Stored: " + dateTime + ", Distance: " + distance + "m, Cumulative: " + cumulativeDistance + "m");
+        Log.d(TAG, "Stored: " + dateTime + ", Speed: " + speed + "m/s, Distance: " + distance + "m, Cumulative: " + cumulativeDistance + "m");
     }
+
+    private String formatDistance_cumulative(double cumulativeDistance) {
+        DecimalFormat kmFormat = new DecimalFormat("#.#");
+        return kmFormat.format(cumulativeDistance);
+    }
+    private String formatDistance(double distance) {
+        DecimalFormat kmFormat = new DecimalFormat("#.#");
+        return kmFormat.format(distance);  // Always show in km
+    }
+
+    private String formatSpeed(float speed) {
+        return new DecimalFormat("#.#").format(speed * 3.6);  // Convert m/s to km/h
+    }
+
 
     private void loadLastCumulativeDistance() {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
@@ -182,22 +194,6 @@ public class LocationService extends Service implements LocationListener {
                 .setContentIntent(pendingIntent)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .build();
-    }
-
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        return START_STICKY;
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        if (locationManager != null) {
-            locationManager.removeUpdates(this);
-        }
-        if (handler != null) {
-            handler.removeCallbacks(periodicCheck);
-        }
     }
 
     @Override

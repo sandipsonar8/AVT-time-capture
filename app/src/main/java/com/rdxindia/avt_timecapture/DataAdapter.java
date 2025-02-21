@@ -29,9 +29,9 @@ public class DataAdapter extends RecyclerView.Adapter<DataAdapter.ViewHolder> {
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         String[] data = dataList.get(position);
 
-        holder.idText.setText(data[0]);
+        holder.speedText.setText(data[0]);
         holder.timestampText.setText(data[1]);
-        holder.distanceText.setText(data[2]); // No extra formatting
+        holder.distanceText.setText(data[2]);
         holder.cumulativeDistanceText.setText(data[3]);
     }
 
@@ -41,11 +41,11 @@ public class DataAdapter extends RecyclerView.Adapter<DataAdapter.ViewHolder> {
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView idText, timestampText, distanceText, cumulativeDistanceText;
+        TextView speedText, timestampText, distanceText, cumulativeDistanceText;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
-            idText = itemView.findViewById(R.id.text_id);
+            speedText = itemView.findViewById(R.id.text_speed);//idText = itemView.findViewById(R.id.text_id);
             timestampText = itemView.findViewById(R.id.text_timestamp);
             distanceText = itemView.findViewById(R.id.text_distance);
             cumulativeDistanceText = itemView.findViewById(R.id.text_cumulative_distance);

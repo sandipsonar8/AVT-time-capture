@@ -37,13 +37,12 @@ public class ShowDataActivity extends AppCompatActivity {
 
         if (cursor != null && cursor.moveToFirst()) {
             do {
-                String id = cursor.getString(cursor.getColumnIndexOrThrow(DB_Helper.COLUMN_ID));
+                String speed = cursor.getString(cursor.getColumnIndexOrThrow(DB_Helper.COLUMN_SPEED));
                 String timestamp = cursor.getString(cursor.getColumnIndexOrThrow(DB_Helper.COLUMN_TIMESTAMP));
                 String distance = cursor.getString(cursor.getColumnIndexOrThrow(DB_Helper.COLUMN_DISTANCE));
                 String cumulativeDistance = cursor.getString(cursor.getColumnIndexOrThrow(DB_Helper.COLUMN_CUMULATIVE_DISTANCE));
 
-                // Store values without further modification
-                dataList.add(new String[]{id, timestamp, distance, cumulativeDistance});
+                dataList.add(new String[]{speed, timestamp, distance, cumulativeDistance});
 
             } while (cursor.moveToNext());
             cursor.close();
